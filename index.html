@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GrantPilot — a grant-application cockpit for academics: build a reusable researcher profile (ORCID/OpenAlex/CV import), then generate biosketches, support statements, and letters for NSF, NIH, ERC, Horizon Europe, and foundation funders, guided step by step.">
+  <title>GrantPilot — Grant Application Cockpit</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23a4543a'/><text x='3' y='12' font-size='11' font-family='Georgia' fill='%23faf6ef'>G</text></svg>">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">GrantPilot</h1>
+      <p class="site-tagline">A grant-application cockpit for academics. Build your researcher profile once — import it from ORCID, OpenAlex, or your CV — then generate every document a funder requires (biosketches, current &amp; pending support, letters, summaries) and track each application step by step. No account, no server — everything lives in your browser's local storage. Funder rules are transcribed from official guidelines with sources and a verification date; always re-check before submitting.</p>
+    </div>
+  </header>
+
+  <nav class="tab-bar" role="tablist" aria-label="Tools">
+    <div class="wrap tab-bar-inner">
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-profile" id="tab-profile" data-tab="profile">Profile</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-grants" id="tab-grants" data-tab="grants">Grant Sources</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-apps" id="tab-apps" data-tab="apps">Applications</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-docs" id="tab-docs" data-tab="docs">Documents</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-ai" id="tab-ai" data-tab="ai">AI &amp; Data</button>
+    </div>
+  </nav>
+
+  <main class="wrap">
+
+    <!-- ================= TAB 1: PROFILE ================= -->
+    <section class="tab-panel active" id="panel-profile" role="tabpanel" aria-labelledby="tab-profile">
+      <h2>Researcher profile</h2>
+      <p class="panel-intro">Populate once, reuse everywhere — every document generator draws from this profile. All fields are editable; everything is stored only in this browser's localStorage.</p>
+
+      <h3>Import</h3>
+      <div class="import-grid">
+        <div class="card import-card">
+          <h4 class="prompt-heading">ORCID auto-import <span class="badge ok">recommended</span></h4>
+          <p class="hint">Pulls your public ORCID record: name, affiliations, education, employment, and works. Uses the free, CORS-enabled ORCID public API — nothing is sent anywhere else.</p>
+          <label class="field-label" for="orcid-input">ORCID iD</label>
+          <input type="text" id="orcid-input" placeholder="0000-0002-1825-0097" autocomplete="off" spellcheck="false">
+          <div class="button-row">
+            <button id="orcid-fetch" class="btn primary">Import from ORCID</button>
+            <button id="openalex-enrich" class="btn">Enrich with OpenAlex</button>
+          </div>
+          <p class="hint">OpenAlex adds citation metrics (cited-by count, h-index) and your top works — by ORCID iD, or by name if no iD is set.</p>
+          <p class="status-line" id="orcid-status" aria-live="polite"></p>
+        </div>
+
+        <div class="card import-card">
+          <h4 class="prompt-heading">CV / résumé upload</h4>
+          <p class="hint">Upload a PDF (parsed in-browser with pdf.js) or DOCX (mammoth.js). Text is extracted locally and heuristically mapped into profile fields — you confirm what gets merged on the next screen. Nothing is uploaded to any server.</p>
+          <div class="button-row">
+            <label class="btn file-btn" for="cv-input">Choose PDF or DOCX</label>
+            <input type="file" id="cv-input" accept=".pdf,.docx" class="hidden">
+          </div>
+          <p class="status-line" id="cv-status" aria-live="polite"></p>
+        </div>
+
+        <div class="card import-card">
+          <h4 class="prompt-heading">Google Scholar — BibTeX export <span class="badge neutral">paste</span></h4>
+          <p class="hint">Google Scholar blocks automatic import, so paste instead: on your Scholar profile select papers → <strong>Export → BibTeX</strong>, copy the result, and paste it here. Entries become publications in your profile.</p>
+          <textarea id="bibtex-input" class="mono" rows="6" spellcheck="false" placeholder="@article{smith2020...&#10;  title={...},&#10;  author={Smith, Jane and Doe, John},&#10;  year={2020}&#10;}"></textarea>
+          <div class="button-row"><button id="bibtex-import" class="btn">Import BibTeX</button></div>
+          <p class="status-line" id="bibtex-status" aria-live="polite"></p>
+        </div>
+
+        <div class="card import-card">
+          <h4 class="prompt-heading">LinkedIn <span class="badge neutral">paste</span></h4>
+          <p class="hint">LinkedIn does not allow automatic profile import. On LinkedIn: your profile → <strong>More → Save to PDF</strong>, open the PDF, copy the text, and paste it here. Experience and Education sections are heuristically parsed.</p>
+          <textarea id="linkedin-input" rows="6" spellcheck="false" placeholder="Paste your LinkedIn profile text here…"></textarea>
+          <div class="button-row"><button id="linkedin-import" class="btn">Parse LinkedIn text</button></div>
+          <p class="status-line" id="linkedin-status" aria-live="polite"></p>
+        </div>
+
+        <div class="card import-card">
+          <h4 class="prompt-heading">ResearchGate <span class="badge neutral">paste</span></h4>
+          <p class="hint">ResearchGate also blocks automated access. Copy your profile's Publications list (and Education section) as text and paste it here.</p>
+          <textarea id="rg-input" rows="6" spellcheck="false" placeholder="Paste your ResearchGate profile text here…"></textarea>
+          <div class="button-row"><button id="rg-import" class="btn">Parse ResearchGate text</button></div>
+          <p class="status-line" id="rg-status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <!-- CV parse confirmation -->
+      <div id="cv-confirm" class="card hidden">
+        <h4 class="prompt-heading">Confirm CV import</h4>
+        <p class="hint">These entries were detected in your CV text. Tick the ones to merge into your profile (duplicates are skipped).</p>
+        <div id="cv-confirm-body"></div>
+        <div class="button-row">
+          <button id="cv-apply" class="btn primary">Merge selected</button>
+          <button id="cv-discard" class="btn ghost">Discard</button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <h3>Basics</h3>
+      <div class="field-grid" id="basics-grid"></div>
+      <label class="field-label" for="bio-notes">Research interests / bio notes <span class="hint-inline">— used by the bio and letter generators</span></label>
+      <textarea id="bio-notes" rows="3" placeholder="e.g. Studies how online learning platforms shape educational inequality; mixed-methods; leads a 6-person lab…"></textarea>
+      <label class="field-label" for="keywords-input" style="margin-top:0.8rem;">Keywords <span class="hint-inline">— comma-separated</span></label>
+      <input type="text" id="keywords-input" placeholder="education policy, causal inference, RCTs">
+
+      <h3>Education <button class="btn small ghost" id="add-education" type="button">+ add</button></h3>
+      <div id="education-list"></div>
+
+      <h3>Appointments &amp; positions <button class="btn small ghost" id="add-appointment" type="button">+ add</button></h3>
+      <div id="appointments-list"></div>
+
+      <h3>Publications <span id="pub-count" class="hint-inline"></span> <button class="btn small ghost" id="add-publication" type="button">+ add</button></h3>
+      <div id="publications-list"></div>
+
+      <h3>Awards &amp; honors <button class="btn small ghost" id="add-award" type="button">+ add</button></h3>
+      <div id="awards-list"></div>
+
+      <h3>Research support — current &amp; pending projects <button class="btn small ghost" id="add-project" type="button">+ add</button></h3>
+      <p class="hint">These feed the Current &amp; Pending (Other) Support table. Include the project you are currently proposing.</p>
+      <div id="projects-list"></div>
+
+      <div class="button-row">
+        <button id="profile-save" class="btn primary">Save profile</button>
+        <span class="status-line ok" id="profile-save-status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: GRANT SOURCES ================= -->
+    <section class="tab-panel" id="panel-grants" role="tabpanel" aria-labelledby="tab-grants">
+      <h2>Grant sources</h2>
+      <p class="panel-intro">Requirement profiles researched from official funder pages (source link + verification date on every entry; <code>null</code> where the funder documents no limit). Rules change — always verify against the current solicitation before applying.</p>
+      <div id="grant-list" class="grant-list"></div>
+
+      <hr class="divider">
+
+      <h3>Custom university / internal grant</h3>
+      <p class="panel-intro">Define your own grant (internal seed funding, a university competition, a foundation not listed here): name it, list the required documents with limits, and GrantPilot builds a checklist, step guide, and document skeletons for it.</p>
+      <div class="card">
+        <div class="field-grid">
+          <div><label class="field-label" for="custom-name">Grant name</label><input type="text" id="custom-name" placeholder="e.g. Faculty Seed Fund 2027"></div>
+          <div><label class="field-label" for="custom-funder">Funder / unit</label><input type="text" id="custom-funder" placeholder="e.g. Office of the Vice Provost"></div>
+          <div><label class="field-label" for="custom-portal">Portal URL <span class="hint-inline">(optional)</span></label><input type="url" id="custom-portal" placeholder="https://…"></div>
+          <div><label class="field-label" for="custom-notes">Notes <span class="hint-inline">(optional)</span></label><input type="text" id="custom-notes" placeholder="Eligibility, amounts, deadlines page…"></div>
+        </div>
+        <h4 class="prompt-heading">Required documents</h4>
+        <div id="custom-docs"></div>
+        <div class="button-row"><button id="custom-add-doc" class="btn small ghost" type="button">+ add document</button></div>
+        <h4 class="prompt-heading">Steps <span class="hint-inline">(optional — one per line, “text | https://link”)</span></h4>
+        <textarea id="custom-steps" rows="3" placeholder="Get department chair approval | https://intranet.example.edu/forms"></textarea>
+        <div class="button-row">
+          <button id="custom-create" class="btn primary">Create custom grant</button>
+          <span class="status-line" id="custom-status" aria-live="polite"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: APPLICATIONS ================= -->
+    <section class="tab-panel" id="panel-apps" role="tabpanel" aria-labelledby="tab-apps">
+      <h2>Applications</h2>
+      <p class="panel-intro">Each application tracks its document checklist, the official step-by-step guide, and a deadline countdown. Start applications from the Grant Sources tab or the custom builder.</p>
+
+      <div class="app-picker">
+        <div class="grow">
+          <label class="field-label" for="app-select">Current application</label>
+          <select id="app-select"></select>
+        </div>
+        <div>
+          <label class="field-label" for="app-deadline">Deadline</label>
+          <input type="date" id="app-deadline">
+        </div>
+        <div><button id="app-delete" class="btn ghost danger">Delete application</button></div>
+      </div>
+
+      <div id="app-empty" class="card">
+        <p class="hint" style="margin:0;">No applications yet. Go to <strong>Grant Sources</strong> and click “Start application” on any funder — or create a custom grant at the bottom of that tab.</p>
+      </div>
+
+      <div id="app-workspace" class="hidden">
+        <p class="countdown" id="app-countdown"></p>
+        <div class="workspace-grid">
+          <div>
+            <h3>Project details <span class="hint-inline">— feed the document generators</span></h3>
+            <div class="field-grid">
+              <div><label class="field-label" for="proj-title">Project title</label><input type="text" id="proj-title" placeholder="Untitled project"></div>
+              <div><label class="field-label" for="proj-budget">Budget category / request</label><input type="text" id="proj-budget" placeholder="e.g. $250,000 over 3 years"></div>
+              <div><label class="field-label" for="proj-duration">Duration</label><input type="text" id="proj-duration" placeholder="e.g. 3 years"></div>
+              <div><label class="field-label" for="proj-collabs">Collaborators</label><input type="text" id="proj-collabs" placeholder="e.g. Dr. A (MIT), Prof. B (Oxford)"></div>
+            </div>
+            <label class="field-label" for="proj-abstract">Abstract / aims summary</label>
+            <textarea id="proj-abstract" rows="5" placeholder="One-paragraph summary of aims and significance — pre-fills letters, bios, and skeletons."></textarea>
+
+            <h3>Document checklist</h3>
+            <div class="check-progress" aria-live="polite">
+              <div class="progress-track"><div class="progress-fill" id="doc-progress-fill"></div></div>
+              <span class="progress-label" id="doc-progress-label">0 / 0 done</span>
+            </div>
+            <div id="app-doc-list"></div>
+            <p class="hint">Mark a document “drafted” once you have generated it in the Documents tab, “done” once it is final (for NSF/NIH: certified in SciENcv where required).</p>
+          </div>
+
+          <aside>
+            <h3>Step-by-step guide <span class="hint-inline">— tick off as you go</span></h3>
+            <div id="app-step-list"></div>
+            <h3>Official links</h3>
+            <div id="app-links" class="card"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: DOCUMENTS ================= -->
+    <section class="tab-panel" id="panel-docs" role="tabpanel" aria-labelledby="tab-docs">
+      <h2>Document generators</h2>
+      <p class="panel-intro">Every document is pre-filled from your profile and the current application's project details. Edit the result in the text box, watch the live preview, then copy to clipboard or download a .docx. “AI assist” is optional (configure in the AI &amp; Data tab) — without a key, the template output is already complete.</p>
+      <p class="hint" id="docs-context"></p>
+
+      <div class="docgen-grid">
+        <aside class="docgen-nav" aria-label="Generators">
+          <h4 class="prompt-heading">Generators</h4>
+          <div id="docgen-nav"></div>
+        </aside>
+        <div>
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:1rem; flex-wrap:wrap;">
+              <h3 id="docgen-title" style="margin:0;">—</h3>
+              <span class="word-count" id="docgen-words"></span>
+            </div>
+            <p class="hint" id="docgen-desc"></p>
+            <div id="docgen-options" class="button-row"></div>
+            <label class="field-label" for="docgen-editor">Content <span class="hint-inline">— edit freely; downloads use this text</span></label>
+            <textarea id="docgen-editor" rows="16" spellcheck="true"></textarea>
+          </div>
+          <div class="card">
+            <h4 class="prompt-heading">Live preview</h4>
+            <div class="preview-pane" id="docgen-preview"></div>
+          </div>
+          <div class="button-row">
+            <button id="docgen-docx" class="btn primary">Download .docx</button>
+            <button id="docgen-copy" class="btn">Copy to clipboard</button>
+            <button id="docgen-ai" class="btn ghost">AI assist (refine)</button>
+          </div>
+          <p class="status-line" id="docgen-status" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 5: AI & DATA ================= -->
+    <section class="tab-panel" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai">
+      <h2>AI assist &amp; data</h2>
+
+      <section class="card" aria-labelledby="ai-heading">
+        <h3 id="ai-heading">AI assist <span class="badge neutral">optional — bring your own key</span></h3>
+        <p class="hint">Connect any OpenAI-compatible chat-completions endpoint to have documents drafted or refined from your profile. The endpoint, model, and key are stored <strong>only in this browser's localStorage</strong> and sent <strong>only</strong> to the endpoint you specify. GrantPilot works fully without a key — every generator has a built-in template fallback.</p>
+        <div class="ai-fields">
+          <div><label class="field-label" for="ai-endpoint">API base URL</label><input type="text" id="ai-endpoint" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false"></div>
+          <div><label class="field-label" for="ai-model">Model</label><input type="text" id="ai-model" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false"></div>
+          <div><label class="field-label" for="ai-key">API key</label><input type="password" id="ai-key" placeholder="sk-…" autocomplete="off"></div>
+        </div>
+        <div class="button-row">
+          <button id="ai-save" class="btn">Save settings (this browser only)</button>
+          <button id="ai-clear" class="btn ghost danger">Clear settings</button>
+          <span class="status-line" id="ai-status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Profile data</h3>
+        <p class="hint">Your profile and applications auto-save to this browser's localStorage. Export a .json backup to move between machines or browsers.</p>
+        <div class="button-row">
+          <button id="data-export" class="btn">Export profile + applications (.json)</button>
+          <label class="btn file-btn" for="data-import-input">Import (.json)</label>
+          <input type="file" id="data-import-input" accept=".json" class="hidden">
+          <button id="data-clear" class="btn ghost danger">Clear everything</button>
+        </div>
+        <p class="status-line" id="data-status" aria-live="polite"></p>
+      </section>
+
+      <section class="card">
+        <h3>Import history</h3>
+        <div id="import-log"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>GrantPilot runs entirely in your browser. Funder requirements are transcribed from official guidelines with source URLs and a verification date in <code>js/data/grants.js</code> — always verify against the current solicitation before submitting; GrantPilot drafts biosketch and support-statement <em>content</em>, but NSF and NIH require the final certified PDFs to be generated in <a href="https://www.ncbi.nlm.nih.gov/sciencv/" rel="noopener">SciENcv</a>. Profile import uses the public <a href="https://orcid.org/" rel="noopener">ORCID</a> and <a href="https://openalex.org/" rel="noopener">OpenAlex</a> APIs; LinkedIn, Google Scholar, and ResearchGate block automated import, so those are manual paste workflows. Documents are generated with docx.js, CV text extraction with pdf.js and mammoth.js (pinned CDNs).</p>
+    </div>
+  </footer>
+
+  <script src="js/data/grants.js"></script>
+  <script src="js/parsers.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/generators.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
